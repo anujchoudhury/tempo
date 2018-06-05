@@ -1,0 +1,45 @@
+spark vs flink
+---memory management
+-spark has manual memory management - whether to keep entries on disk or memory,serialization/non-serialization.
+-flink has automatic memory management similar to java and c
+
+---windowing
+-spark has time based window, and hence a record coming in a particular window is considered different from the same record in the next window so whatever happened in the past, you dont really care
+-flink has record based window, and hence in the above case, incremental record based processing is done
+
+--processing
+-microbatching - spark has this
+-flink has true streaming
+
+---use cases
+-detection platform
+-action platform
+
+transaction system gotta be real time for banking
+
+hadoop is a big data processing framework
+
+spark and flink are processing systems, care about only processing models, can work with any storage
+
+can connect to multiple data sources - hdfs, kafka,flume etc.Data Source Agnostic
+d
+both have multiple execution environments-local,cluster,yarn etc
+
+flink core
+2 types of api
+data stream api - real time api 
+dataset api - batch processing
+
+multiple libraries for different user groups
+higher level abstraction
+table api/mrql- sql operation on distributed data
+ml, sql etc etc
+jelly api for graph 
+
+table api - sql on streaming data (not in spark)
+samoa - ml algos on streaming data
+
+main daemon master slave architecture
+
+tail -f log/flink-*- jobmanager*.out
+output 

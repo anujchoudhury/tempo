@@ -1,0 +1,202 @@
+In practice, the cluster will be hosted on a remote machine that's connected to all other nodes. There will be one computer, called the master that manages splitting up the data and the computations. The master is connected to the rest of the computers in the cluster, which are called slaves. The master sends the slaves data and calculations to run, and they send their results back to the master.
+
+When you're just getting started with Spark it's simpler to just run a cluster locally. Thus, for this course, instead of connecting to another computer, all computations will be run on DataCamp's servers in a simulated cluster.
+
+Creating the connection is as simple as creating an instance of the SparkContext class. The class constructor takes a few optional arguments that allow you to specify the attributes of the cluster you're connecting to.
+
+
+---Spark's core data structure is the Resilient Distributed Dataset (RDD). This is a low level object that lets Spark work its magic by splitting data across multiple nodes in the cluster. However, RDDs are hard to work with directly, so in this course you'll be using the Spark DataFrame abstraction built on top of RDDs.
+---
+---The Spark DataFrame was designed to behave a lot like a SQL table (a table with variables in the columns and observations in the rows). Not only are they easier to understand, DataFrames are also more optimized for complicated operations than RDDs.
+---
+---When you start modifying and combining columns and rows of data, there are many ways to arrive at the same result, but some often take much longer than others. When using RDDs, it's up to the data scientist to figure out the right way to optimize the query, but the DataFrame implementation has much of this optimization built in!
+
+
+
+---An object holding all these attributes can be created with the SparkConf() constructor. Take a look at the documentation for all the details!
+---To start working with Spark DataFrames, you first have to create a SparkSession object from your SparkContext. You can think of the SparkContext as your connection to the cluster and the SparkSession as your interface with that connection.
+---Creating multiple SparkSessions and SparkContexts can cause issues, so it's best practice to use the SparkSession.builder.getOrCreate() method. This ---returns an existing SparkSession if there's already one in the environment, or creates a new one if necessary!
+
+
+# Import SparkSession from pyspark.sql
+from pyspark.sql import SparkSession
+
+# Create my_spark
+my_spark = SparkSession.builder.getOrCreate()
+
+# Print my_spark
+print(my_spark)
+
+
+---Your SparkSession has an attribute called catalog which lists all the data inside the cluster. This attribute has a few methods for extracting different ---pieces of information.
+
+---One of the most useful is the .listTables() method, which returns the names of all the tables in your cluster as a list.
+
+# Don't change this query
+query = "FROM flights SELECT * LIMIT 10"
+
+# Get the first 10 rows of flights
+flights10 = spark.sql(query)
+
+# Show the results
+flights10.show()
+
+print(spark.catalog.listTables())
+
+
+---Spark DataFrames make that easy with the .toPandas() method. Calling this method on a Spark DataFrame returns the corresponding pandas DataFrame. It's as ---simple as that!
+---
+---This time the query counts the number of flights to each airport from SEA and PDX.
+
+# Don't change this query
+query = "SELECT origin, dest, COUNT(*) as N FROM flights GROUP BY origin, dest"
+
+# Run the query
+flight_counts = spark.sql(query)
+
+# Convert the results to a pandas DataFrame
+pd_counts = flight_counts.toPandas()
+
+# Print the head of pd_counts
+print(pd_counts.head())
+
+
+---However, maybe you want to go the other direction, and put a pandas DataFrame into a Spark cluster! The SparkSession class has a method for this as well.
+---
+---The .createDataFrame() method takes a pandas DataFrame and returns a Spark DataFrame.
+---
+The output of this method is stored locally, not in the SparkSession catalog. This means that you can use all the Spark DataFrame methods on it, but you ---can't access the data in other contexts.
+---
+For example, a SQL query (using the .sql() method) that references your DataFrame will throw an error. To access the data in this way, you have to save it ---as a temporary table.
+---
+You can do this using the .createTempView() Spark DataFrame method, which takes as its only argument the name of the temporary table you'd like to register. This method registers the DataFrame as a table in the catalog, but as this table is temporary, it can only be accessed from the specific SparkSession used ---to create the Spark DataFrame.
+---
+There is also the method .createOrReplaceTempView(). This safely creates a new temporary table if nothing was there before, or updates an existing table if ---one was already defined. You'll use this method to avoid running into problems with duplicate tables.
+---
+
+# Create pd_temp
+pd_temp = pd.DataFrame(np.random.random(10))
+
+# Create spark_temp from pd_temp
+spark_temp = spark.createDataFrame(pd_temp)
+
+# Examine the tables in the catalog
+print(spark.catalog.listTables())
+
+# Add spark_temp to the catalog
+spark_temp.createTempView("temp")
+
+# Examine the tables in the catalog again
+print(spark.catalog.listTables())
+
+
+---Luckily, your SparkSession has a .read attribute which has several methods for reading different data sources into Spark DataFrames. Using these you can create a DataFrame from a .csv file just like with regular pandas DataFrames!
+---
+---
+---    Use the .read.csv() method to create a Spark DataFrame called airports
+---        The first argument is file_path
+---        Pass the argument header=True so that Spark knows to take the column names from the first line of the file.
+---    Print out this DataFrame by calling .show().
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+---Let's look at performing column-wise operations. In Spark you can do this using the .withColumn() method, which takes two arguments. First, a string with the name of your new column, and second the new column itself.
+---
+---The new column must be an object of class Column. Creating one of these is as easy as extracting a column from your DataFrame using df.colName.
+---
+---Updating a Spark DataFrame is somewhat different than working in pandas because the Spark DataFrame is immutable. This means that it can't be changed, and so columns can't be updated in place.
+---
+---Thus, all these methods return a new DataFrame. To overwrite the original DataFrame you must reassign the returned DataFrame using the method like so:
+---
+---df = df.withColumn("newCol", df.oldCol + 1)
+---
+---The above code creates a DataFrame with the same columns as df plus a new column, newCol, where every entry is equal to the corresponding entry from oldCol, plus one.
+---
+---To overwrite an existing column, just pass the name of the column as the first argument!
+
+# Create the DataFrame flights
+flights = spark.table("flights")
+
+# Show the head
+print(flights.show())
+
+# Add duration_hrs
+flights = flights.withColumn("duration_hrs", flights.air_time/60)
+
+
+
+
+--- reducing your data by breaking it into chunks and summarizing each chunk.
+---
+---This is done in SQL using the GROUP BY command. This command breaks your data into groups and applies a function from your SELECT statement to each group.
+---
+---For example, if you wanted to count the number of flights from each of two origin destinations, you could use the query
+---
+---SELECT COUNT(*) FROM flights
+---GROUP BY origin;
+---
+---GROUP BY origin tells SQL that you want the output to have a row for each unique value of the origin column. The SELECT statement selects the values you want to populate each of the columns. Here, we want to COUNT() every row in each of the groups.
+---
+
+Let's take a look at the .filter() method. As you might suspect, this is the Spark counterpart of SQL's WHERE clause. The .filter() method takes either a Spark Column of boolean (True/False) values or the WHERE clause of a SQL expression as a string.
+
+For example, the following two expressions will produce the same output:
+
+flights.filter(flights.air_time > 120).show()
+flights.filter("air_time > 120").show()
+
+
+
+
+---The Spark variant of SQL's SELECT is the .select() method. This method takes multiple arguments - one for each column you want to select. These arguments can either be the column name as a string (one for each column) or a column object (using the df.colName syntax). When you pass a column object, you can perform operations like addition or subtraction on the column to change the data contained in it, much like inside .withColumn().
+---
+---The difference between .select() and .withColumn() methods is that .select() returns only the columns you specify, while .withColumn() returns all the columns of the DataFrame in addition to the one you defined. It's often a good idea to drop columns you don't need at the beginning of an operation so that you're not dragging around extra data as you're wrangling. In this case, you would use .select() and not .withColumn().
+
+
+---All of the common aggregation methods, like .min(), .max(), and .count() are GroupedData methods. These are created by calling the .groupBy() DataFrame method. You'll learn exactly what that means in a few exercises
+---. For example, to find the minimum value of a column, col, in a DataFrame, df, you could do
+---
+---df.groupBy().min("col").show()
+---
+---This creates a GroupedData object (so you can use the .min() method), then finds the minimum value in col, and returns it as a DataFrame.
+
+
+
+
+---At the core of the pyspark.ml module are the Transformer and Estimator classes. Almost every other class in the module behaves similarly to these two basic classes.
+
+---Transformer classes have a .transform() method that takes a DataFrame and returns a new DataFrame; usually the original one with a new column appended. For example, you might use the class Bucketizer to create discrete bins from a continuous feature or the class PCA to reduce the dimensionality of your dataset using principal component analysis.
+---
+---Estimator classes all implement a .fit() method. These methods also take a DataFrame, but instead of returning another DataFrame they return a model object. This can be something like a StringIndexerModel for including categorical data saved as strings in your models, or a RandomForestModel that uses the random forest algorithm for classification or regression.
+
+---Spark only handles numeric data. That means all of the columns in your DataFrame must be either integers or decimals (called 'doubles' in Spark).
