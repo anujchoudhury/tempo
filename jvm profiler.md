@@ -6,6 +6,7 @@ Though built for Spark, its generic implementation makes it applicable to any Ja
 
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------
+
 Why is this required, when a standard Spark UI already exists?
 ------------------------------------------------------
 i)In a distributed environment, multiple Spark applications run on the same server and each Spark application has a large number of processes (e.g. thousands of executors) running across many servers.
@@ -20,7 +21,6 @@ ii)In their current implementations, Spark and Apache Hadoop libraries do not ex
 	
 iii)There are some existing open source tools, like [Etsy’s statsd-jvm-profiler](https://github.com/etsy/statsd-jvm-profiler), which could collect metrics at the individual application level, but they do not provide the capability to dynamically inject code into existing Java binary to collect metrics. 
 
--------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Features:-
 ----------
@@ -77,3 +77,5 @@ A brief overview of how this works
 	spark-submit --jars=jvm-profiler-0.0.7.jar,spark-streaming-kafka-0-8-assembly_2.11-2.3.0.jar,kafka_2.11-0.8.2.1.jar,kafka-clients-0.8.2.1.jar,metrics-core-2.2.0.jar,zkclient-0.10.jar,zookeeper-3.4.5.jar  --conf spark.driver.extraJavaOptions=-javaagent:jvm-profiler-0.0.7.jar=reporter=com.uber.profiling.reporters.ConsoleOutputReporter,metricInterval=5000 --conf spark.executor.extraJavaOptions=-javaagent:jvm-profiler-0.0.7.jar=reporter=com.uber.profiling.reporters.ConsoleOutputReporter,metricInterval=5000        --conf spark.eventlog.enabled=false newcount.py arg1 arg2 </p>
  
  In Addition to this page, please look into [this page](https://eng.uber.com/jvm-profiler/)
+ 
+ To download the profiler, go [here](https://github.com/uber-common/jvm-profiler)
