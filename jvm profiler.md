@@ -1,4 +1,4 @@
-# __Write up on Spark JVM Profiler __
+# Write up on Spark JVM Profiler 
 
 To mine the resource usage patterns without changing user code, JVM Profiler was built and open sourced by Uber It is a distributed profiler to collect performance and resource usage metrics and serve them for further analysis.
 
